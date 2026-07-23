@@ -1,0 +1,56 @@
+{
+  "name": "minimax-usage-monitor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MiniMax Token Plan 用量监控桌面小工具",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "concurrently -k -n vite,electron -c blue,green \"npm:dev:vite\" \"npm:dev:electron\"",
+    "dev:vite": "vite",
+    "dev:electron": "wait-on http://localhost:5173 && tsc -p tsconfig.electron.json && cross-env NODE_ENV=development electron .",
+    "build:vite": "vue-tsc --noEmit && vite build",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "build": "npm run build:vite && npm run build:electron",
+    "start": "cross-env NODE_ENV=production electron .",
+    "package": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder",
+    "test": "tsx src/lib/minimax.test.mjs && tsx src/lib/pricing.test.mjs"
+  },
+  "dependencies": {
+    "pinia": "^2.2.6",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "tsx": "^4.23.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "vue-tsc": "^2.1.10",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "com.minimax.usage.monitor",
+    "productName": "MiniMax Usage Monitor",
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}

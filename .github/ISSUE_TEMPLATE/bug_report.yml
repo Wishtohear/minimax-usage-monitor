@@ -1,0 +1,101 @@
+name: Bug 报告
+description: 工具运行异常或显示不对时填这个
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: data-source
+    attributes:
+      label: 数据源
+      description: 哪个数据源出的问题？
+      options:
+        - API Key（5h/周窗口）
+        - Dashboard 登录（累计/趋势/积分）
+        - 价格对照
+        - 其他 / 不确定
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 工具版本
+      description: 哪个 commit / tag 出现的？（比如 0.1.0）
+      placeholder: 0.1.0
+    validations:
+      required: false
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: 操作系统
+      options:
+        - Windows 11
+        - Windows 10
+        - macOS 14+
+        - macOS 13
+        - Ubuntu 22.04
+        - Ubuntu 20.04
+        - 其他
+    validations:
+      required: true
+
+  - type: dropdown
+    id: billing
+    attributes:
+      label: 账号计费类型
+      options:
+        - Token Plan 订阅（Plus/Max/Ultra）
+        - 按量付费
+        - 免费
+        - 不确定
+    validations:
+      required: false
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 一步步描述你怎么触发的
+      placeholder: |
+        1. 打开工具，点了……
+        2. 输入了……
+        3. 看到……
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+      placeholder: 期望看到「5h 限额 100% / 已用 15%」
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      placeholder: 看到「已用 0%」「--」之类的
+    validations:
+      required: true
+
+  - type: textarea
+    id: raw-json
+    attributes:
+      label: 原始 JSON（如果有）
+      description: 点「查看 MiniMax 原始响应」折叠面板，把 JSON 复制进来——最有效
+      placeholder: |
+        {
+          "model_remains": [...],
+          "base_resp": {...}
+        }
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 错误日志 / 截图
+      description: 主窗口 DevTools Console 的输出，或者截图
+    validations:
+      required: false

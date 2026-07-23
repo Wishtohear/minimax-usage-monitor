@@ -1,0 +1,12 @@
+name: 提问
+description: 不知道怎么用、有疑问
+labels: ["question"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: 问题
+      placeholder: |
+        怎么用我的 API Key 调通？我看了 README 不知道「订阅 Key」在哪创建
+    validations:
+      required: true

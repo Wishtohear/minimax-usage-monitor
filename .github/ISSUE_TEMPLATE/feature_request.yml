@@ -1,0 +1,38 @@
+name: 功能建议
+description: 想加新功能？填这个
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 想解决什么问题
+      description: 一两句话说清楚痛点
+      placeholder: |
+        现在工具只显示 5h 窗口，但我想看「过去 24h 用了多少」来排查 API 调用高峰
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望的交互
+      placeholder: |
+        在主卡上加一个 24h 切换按钮，点击后展示过去 24h 的折线图
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 备选方案（可选）
+      placeholder: |
+        或者直接加一个「小时级调用量」卡片
+    validations:
+      required: false
+
+  - type: textarea
+    id: references
+    attributes:
+      label: 参考（截图 / 竞品 / 文档）
+    validations:
+      required: false

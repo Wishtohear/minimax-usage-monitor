@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build-and-test:
+    name: Build & test (Node ${{ matrix.node-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20.x, 22.x]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Type check (前端)
+        run: npx vue-tsc --noEmit
+
+      - name: Type check (Electron 主进程)
+        run: npx tsc -p tsconfig.electron.json --noEmit
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build (Vite)
+        run: npm run build:vite
+
+      - name: Build (Electron)
+        run: npm run build:electron
+
+      - name: Upload build artifacts
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '22.x'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}-node${{ matrix.node-version }}
+          path: |
+            dist/
+            dist-electron/
+          retention-days: 7
+
+  lint:
+    name: Lint & format check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      # 当前没有 ESLint/Prettier 配置 —— 占位步骤，后续加
+      - name: Verify package.json scripts
+        run: node -e "const p = require('./package.json'); const required = ['build', 'test', 'dev', 'build:vite', 'build:electron']; for (const s of required) if (!p.scripts[s]) throw new Error('missing script: ' + s); console.log('✓ all required scripts present')"
