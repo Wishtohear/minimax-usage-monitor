@@ -8,6 +8,9 @@ import type {
   DashboardUsageSummary,
   DashboardRemainsResponse,
   TokenPlanCredit,
+  DashboardUsageOverview,
+  DashboardHourlyDetail,
+  OverviewPeriod,
 } from "@/types/usage";
 
 const STORAGE_KEY_API_KEY = "minimax.usage.apiKey";
@@ -42,6 +45,29 @@ function loadDashboardGroupId(): string | null {
   }
 }
 
+// 主进程对失败的请求返回 null；这里再按各接口的关键字段做一次形状校验，
+// 避免结构不符的 payload 被当成正常数据渲染
+function hasFields<T>(v: unknown, keys: (keyof T)[]): v is T {
+  if (v == null || typeof v !== "object") return false;
+  const o = v as Record<string, unknown>;
+  return keys.some((k) => o[k as string] !== undefined);
+}
+
+const isSummaryPayload = (v: unknown) =>
+  hasFields<DashboardUsageSummary>(v, ["most_active_day", "total_days", "daily_token_usage"]);
+
+const isRemainsPayload = (v: unknown) =>
+  hasFields<DashboardRemainsResponse>(v, ["model_remains"]);
+
+const isCreditPayload = (v: unknown) =>
+  hasFields<TokenPlanCredit>(v, ["total_credits", "remaining_credits"]);
+
+const isOverviewPayload = (v: unknown) =>
+  hasFields<DashboardUsageOverview>(v, ["trend", "language_model_token"]);
+
+const isHourlyDetailPayload = (v: unknown) =>
+  hasFields<DashboardHourlyDetail>(v, ["entries"]);
+
 export const useUsageStore = defineStore("usage", () => {
   const apiKey = ref<string>(loadApiKey());
   const intervalMinutes = ref<RefreshIntervalMinutes>(loadInterval());
@@ -63,8 +89,13 @@ export const useUsageStore = defineStore("usage", () => {
   const dashboardSummary = ref<DashboardUsageSummary | null>(null);
   const dashboardRemains = ref<DashboardRemainsResponse | null>(null);
   const dashboardCredit = ref<TokenPlanCredit | null>(null);
+  const dashboardOverview = ref<DashboardUsageOverview | null>(null);
+  const dashboardHourlyDetail = ref<DashboardHourlyDetail | null>(null);
   const dashboardIsLoading = ref<boolean>(false);
   const dashboardError = ref<string | null>(null);
+
+  // 用量总览的时间维度（对应页面的"当日 / 近 7 天 / 近 30 天"）
+  const overviewPeriod = ref<OverviewPeriod>("day");
 
   const hasDashboardSession = computed(() => dashboardSession.value.ready);
 
@@ -133,6 +164,8 @@ export const useUsageStore = defineStore("usage", () => {
     dashboardSummary.value = null;
     dashboardRemains.value = null;
     dashboardCredit.value = null;
+    dashboardOverview.value = null;
+    dashboardHourlyDetail.value = null;
   }
 
   async function refreshDashboardAuthStatus(): Promise<void> {
@@ -141,7 +174,9 @@ export const useUsageStore = defineStore("usage", () => {
       const status = await window.electronAPI.getAuthStatus();
       dashboardSession.value = {
         ready: status.ready,
-        groupId: status.groupId ?? loadDashboardGroupId(),
+        // 未登录时不要沿用 localStorage 里的历史 groupId，
+        // 否则会拿着失效的 id 去请求，所有卡片都是空
+        groupId: status.ready ? (status.groupId ?? loadDashboardGroupId()) : null,
         loggedInAt: status.loggedInAt ?? null,
         accountLabel: dashboardSession.value.accountLabel,
       };
@@ -160,16 +195,72 @@ export const useUsageStore = defineStore("usage", () => {
     if (!groupId) return;
     dashboardIsLoading.value = true;
     try {
-      const [summary, remains, credit] = await Promise.all([
-        window.electronAPI.fetchDashboardSummary(groupId) as Promise<DashboardUsageSummary>,
-        window.electronAPI.fetchDashboardRemains(groupId) as Promise<DashboardRemainsResponse>,
+      // 全部按 unknown 接收，由 is*Payload 守卫做真正的类型收窄
+      const [summary, remains, credit, overview] = await Promise.all([
+        window.electronAPI.fetchDashboardSummary(groupId).catch(() => null),
+        window.electronAPI.fetchDashboardRemains(groupId).catch(() => null),
+        window.electronAPI.fetchDashboardCredit(groupId).catch(() => null),
         window.electronAPI
-          .fetchDashboardCredit(groupId)
-          .catch(() => null) as Promise<TokenPlanCredit | null>,
+          .fetchDashboardOverview(groupId, overviewPeriod.value)
+          .catch(() => null),
       ]);
-      dashboardSummary.value = summary;
-      dashboardRemains.value = remains;
-      dashboardCredit.value = credit;
+      dashboardSummary.value = isSummaryPayload(summary) ? summary : null;
+      dashboardRemains.value = isRemainsPayload(remains) ? remains : null;
+      dashboardCredit.value = isCreditPayload(credit) ? credit : null;
+      dashboardOverview.value = isOverviewPayload(overview) ? overview : null;
+
+      // 全部失败时给出可操作的提示，而不是让所有卡片静默显示 "--"
+      if (
+        !dashboardSummary.value &&
+        !dashboardRemains.value &&
+        !dashboardCredit.value &&
+        !dashboardOverview.value
+      ) {
+        dashboardError.value =
+          "MiniMax 接口全部无数据，通常是登录态已过期，请点「登出」后重新登录";
+      } else {
+        dashboardError.value = null;
+      }
+    } catch (err) {
+      dashboardError.value = err instanceof Error ? err.message : String(err);
+    } finally {
+      dashboardIsLoading.value = false;
+    }
+  }
+
+  async function setOverviewPeriod(p: OverviewPeriod): Promise<void> {
+    overviewPeriod.value = p;
+    const groupId = dashboardSession.value.groupId;
+    if (!window.electronAPI || !groupId) return;
+    dashboardIsLoading.value = true;
+    try {
+      const res = await window.electronAPI.fetchDashboardOverview(groupId, p);
+      dashboardOverview.value = isOverviewPayload(res) ? res : null;
+      dashboardError.value = null;
+    } catch (err) {
+      dashboardError.value = err instanceof Error ? err.message : String(err);
+    } finally {
+      dashboardIsLoading.value = false;
+    }
+  }
+
+  // 用量明细：默认拉今天（UTC+8）
+  function todayUtc8(): string {
+    return new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
+  }
+
+  async function loadHourlyDetail(startTime: string, endTime: string): Promise<void> {
+    if (!window.electronAPI) return;
+    const groupId = dashboardSession.value.groupId;
+    if (!groupId) return;
+    dashboardIsLoading.value = true;
+    try {
+      const res = await window.electronAPI.fetchDashboardHourlyDetail(
+        groupId,
+        startTime,
+        endTime
+      );
+      dashboardHourlyDetail.value = isHourlyDetailPayload(res) ? res : null;
       dashboardError.value = null;
     } catch (err) {
       dashboardError.value = err instanceof Error ? err.message : String(err);
@@ -218,8 +309,11 @@ export const useUsageStore = defineStore("usage", () => {
     dashboardSummary,
     dashboardRemains,
     dashboardCredit,
+    dashboardOverview,
+    dashboardHourlyDetail,
     dashboardIsLoading,
     dashboardError,
+    overviewPeriod,
     hasDashboardSession,
     refresh,
     setApiKey,
@@ -229,5 +323,8 @@ export const useUsageStore = defineStore("usage", () => {
     logout,
     refreshDashboardAuthStatus,
     refreshDashboardData,
+    setOverviewPeriod,
+    loadHourlyDetail,
+    todayUtc8,
   };
 });

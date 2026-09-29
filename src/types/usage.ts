@@ -86,8 +86,9 @@ export type RefreshIntervalMinutes = 1 | 5 | 15 | 30;
 
 // =====================================================
 // Dashboard API 数据结构（登录态下的 dashboard 后端接口）
-// 来源：https://platform.minimaxi.com/console/usage 页面后端
+// 来源：https://platform.minimax.cn/console/usage 页面后端
 // 鉴权：cookie (_token=...) + x-group-id header
+// 后端 host：https://www.minimax.cn
 // =====================================================
 
 export interface DashboardMostActiveDay {
@@ -124,7 +125,7 @@ export interface DashboardUsageSummary {
   total_days: number;
   total_token_consumed: string;            // "17.70B"
   usage_ranking_percent: number;           // 百分位排名
-  most_active_day: DashboardMostActiveDay;
+  most_active_day?: DashboardMostActiveDay; // 暂无调用记录时后端可能不带这个字段
   active_days: number;
   current_consecutive_days: number;
   // daily_token_usage 按老 → 新 排序（数组最后一个元素是今天的）
@@ -133,14 +134,15 @@ export interface DashboardUsageSummary {
 }
 
 export interface DashboardRemainsModel {
-  model_name: string;
+  model_name: string;              // "general"（语言模型）/ "video"（视频赠送）
   start_time?: number;
   end_time?: number;
-  remains_time?: number;              // 毫秒
+  remains_time?: number;           // 毫秒
+  // count 为 -1 表示"不限量"（如 Ultra 的周限额），此时只用 percent 展示
   current_interval_total_count?: number;
   current_interval_used_count?: number;
   current_interval_remains_count?: number;
-  current_interval_used_percent?: string;  // "18%"
+  current_interval_used_percent?: string;   // "19%"
   current_interval_total_percent?: string;  // "100%"
   current_interval_status?: number;
   weekly_start_time?: number;
@@ -149,7 +151,7 @@ export interface DashboardRemainsModel {
   current_weekly_total_count?: number;
   current_weekly_used_count?: number;
   current_weekly_remains_count?: number;
-  current_weekly_used_percent?: string;
+  current_weekly_used_percent?: string;    // "0%"
   current_weekly_total_percent?: string;
   current_weekly_status?: number;
 }
@@ -200,4 +202,59 @@ export interface SubscriptionInfo {
   title: string;               // 原始 "Token Plan · TokenPlanUltra-月度会员"
   cycle: "月" | "年" | "其他";  // 计费周期
   expireAt: string | null;     // 到期时间（如果接口给）
+}
+
+// =====================================================
+// 用量总览 + 每日趋势
+// GET /backend/account/token_plan/usage_overview?period=day|week|month
+//   period=day   → trend 的 time_label 是小时（"00:00" ~ "23:00"）
+//   period=week  → trend 的 time_label 是日期（"2026-09-23" ~ ...，近 7 天）
+//   period=month → trend 的 time_label 是日期（近 30 天）
+// =====================================================
+
+export type OverviewPeriod = "day" | "week" | "month";
+
+export interface OverviewTrendModel {
+  model: string;               // "MiniMax-M2.7" / "MiniMax-M3-512k" / "MiniMax-M3.1-Flash-Preview" ...
+  token: number;
+}
+
+export interface OverviewTrendPoint {
+  time_label: string;          // day 周期为 "HH:00"，week/month 周期为 "YYYY-MM-DD"
+  total_token: number;
+  models: OverviewTrendModel[];
+}
+
+export interface DashboardUsageOverview {
+  language_model_token: number;    // 周期内语言模型总 token
+  cache_hit_percent: string;       // "62.0"（字符串百分比）
+  trend: OverviewTrendPoint[];
+  trend_total_token: number;
+  trend_average_token: number;     // day 周期为"小时均值"，week/month 为"日均值"
+  base_resp?: { status_code: number; status_msg: string };
+}
+
+// =====================================================
+// 用量明细（UTC+8）
+// GET /backend/account/token_plan/usage_hourly_detail?start_time=YYYY-MM-DD&end_time=YYYY-MM-DD
+// =====================================================
+
+export interface HourlyDetailEntry {
+  time_range: string;              // "2026/09/29 10:00～11:00"
+  source: string;                  // "-"（未区分来源）
+  model: string;                   // 模型名或工具名（如 "coding-plan-search"）
+  biz_type: "Text" | "Tool" | string;
+  input_token?: number;
+  output_token?: number;
+  cache_read_token?: number;
+  cache_create_token?: number;
+  cache_hit_percent?: string;      // "36.9"（字符串，0~100）
+  // biz_type === "Tool" 时才有
+  media_or_tool_count?: number;
+}
+
+export interface DashboardHourlyDetail {
+  entries: HourlyDetailEntry[];
+  has_more: boolean;
+  base_resp?: { status_code: number; status_msg: string };
 }

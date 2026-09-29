@@ -56,10 +56,10 @@ function save() {
       <div v-if="!validation.ok" class="error">{{ validation.message }}</div>
       <div class="hint">
         在
-        <a href="https://platform.minimaxi.com/" target="_blank" rel="noopener">MiniMax 开放平台</a>
+        <a href="https://platform.minimax.cn/" target="_blank" rel="noopener">MiniMax 开放平台</a>
         的「接口密钥」中创建订阅 Key（Token Plan 专用 API Key）。
         本工具仅把 Key 存在浏览器本地，发往
-        <code>api.minimaxi.com</code> 查询用量。
+        <code>api.minimax.cn</code> 查询用量。
       </div>
     </div>
 

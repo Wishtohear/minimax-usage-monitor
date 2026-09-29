@@ -22,7 +22,7 @@ function fmtBig(s: string | undefined): string {
 
 // 把纯数字 token 数（如 1_970_000_000）格式化成 "1.97B" 风格
 function fmtTokens(n: number | null | undefined): string {
-  if (n == null) return "--";
+  if (n == null || !Number.isFinite(n)) return "--";
   const abs = Math.abs(n);
   if (abs >= 1e9) return `${(n / 1e9).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}B`;
   if (abs >= 1e6) return `${(n / 1e6).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}M`;
@@ -74,9 +74,9 @@ const last30 = computed<number | null>(() => sumLastN(summary.value?.daily_token
       </div>
       <div class="metric highlight">
         <div class="metric-value">
-          {{ fmtBig(summary.most_active_day.token_count) }}
+          {{ fmtBig(summary.most_active_day?.token_count) }}
         </div>
-        <div class="metric-label">单日峰值（{{ summary.most_active_day.date }}）</div>
+        <div class="metric-label">单日峰值{{ summary.most_active_day?.date ? `（${summary.most_active_day.date}）` : "" }}</div>
       </div>
       <div class="metric">
         <div class="metric-value">{{ summary.active_days }}</div>

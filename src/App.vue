@@ -10,6 +10,8 @@ import SubscriptionInfoCard from "@/components/SubscriptionInfoCard.vue";
 import SubscriptionSummaryCard from "@/components/SubscriptionSummaryCard.vue";
 import UsageTrendCard from "@/components/UsageTrendCard.vue";
 import UsageHeatmapCard from "@/components/UsageHeatmapCard.vue";
+import UsageOverviewCard from "@/components/UsageOverviewCard.vue";
+import UsageDetailTable from "@/components/UsageDetailTable.vue";
 import PricingComparisonCard from "@/components/PricingComparisonCard.vue";
 import StatusBar from "@/components/StatusBar.vue";
 import PlanBadge from "@/components/PlanBadge.vue";
@@ -99,8 +101,10 @@ watch(
         <!-- Dashboard 真实调用量相关（登录后显示） -->
         <SubscriptionInfoCard v-if="store.hasDashboardSession" />
         <SubscriptionSummaryCard v-if="store.hasDashboardSession" />
+        <UsageOverviewCard v-if="store.hasDashboardSession" />
         <UsageTrendCard v-if="store.hasDashboardSession" />
         <UsageHeatmapCard v-if="store.hasDashboardSession" />
+        <UsageDetailTable v-if="store.hasDashboardSession" />
         <PricingComparisonCard v-if="store.hasDashboardSession" />
 
         <details v-if="store.usage" class="raw-json">

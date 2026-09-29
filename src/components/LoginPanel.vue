@@ -57,8 +57,12 @@ async function logout() {
 
       <template v-else>
         <p class="login-hint">
-          登录后可以查看：累计调用量、单日峰值、活跃天数、调用趋势折线图、调用热力图等"真实调用量"数据。
+          登录后可以查看：累计调用量、单日峰值、活跃天数、调用趋势折线图、调用热力图、用量明细等"真实调用量"数据。
           登录窗口会内嵌在本应用内，关掉就退出登录。
+        </p>
+        <p class="login-hint warn">
+          如果之前登录过 <code>minimaxi.com</code> 旧域名，升级后 cookie 不通用，
+          需要在这里重新登录一次 <code>minimax.cn</code>。
         </p>
         <div class="login-actions">
           <button class="btn btn-primary" @click="openLogin">

@@ -23,7 +23,7 @@
 - API Key 只存浏览器 localStorage
 - Dashboard cookie 存在 Electron 独立 partition `persist:minimax-auth`，
   跨重启有效，但**只在本机**，不会发出去
-- 所有 MiniMax API 调用直接 `https://www.minimaxi.com/...`，
+- 所有 MiniMax API 调用直接 `https://www.minimax.cn/...`，
   没有中间代理
 
 ### 用户在 issue / PR 里需要避免

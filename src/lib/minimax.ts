@@ -8,7 +8,7 @@ import type {
 } from "@/types/usage";
 
 const REMAINS_ENDPOINT =
-  "https://www.minimaxi.com/v1/api/openplatform/coding_plan/remains";
+  "https://www.minimax.cn/v1/api/openplatform/coding_plan/remains";
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
@@ -57,7 +57,7 @@ function formatResetIn(ms: number): string {
 }
 
 // —— 套餐信息解析 ——
-// MiniMax 公开套餐等级（参考 https://platform.minimaxi.com/subscribe/token-plan）
+// MiniMax 公开套餐等级（参考 https://platform.minimax.cn/subscribe/token-plan）
 const PLAN_PRICE_MAP: Record<PlanTier, string> = {
   Plus: "¥49 / 月",
   Max: "¥119 / 月",

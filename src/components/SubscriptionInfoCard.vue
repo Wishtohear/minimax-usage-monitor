@@ -70,7 +70,8 @@ const credit = computed(() => store.dashboardCredit);
 // 只要 credit 拿到了（接口成功）就显示，即使余额为 0 也是有意义的"已用完"提示
 const hasCredits = computed(() => !!credit.value);
 
-function fmtNumber(n: number): string {
+function fmtNumber(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return "—";
   if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
   if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
   return n.toLocaleString("zh-CN");

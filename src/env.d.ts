@@ -32,6 +32,12 @@ declare global {
       fetchDashboardSummary: (groupId: string) => Promise<unknown>;
       fetchDashboardRemains: (groupId: string) => Promise<unknown>;
       fetchDashboardCredit: (groupId: string) => Promise<unknown>;
+      fetchDashboardOverview: (groupId: string, period: string) => Promise<unknown>;
+      fetchDashboardHourlyDetail: (
+        groupId: string,
+        startTime: string,
+        endTime: string
+      ) => Promise<unknown>;
     };
   }
 }

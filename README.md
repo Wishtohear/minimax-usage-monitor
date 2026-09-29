@@ -2,7 +2,7 @@
 
 # MiniMax 用量监控
 
-**一个监控 [MiniMax Token Plan](https://platform.minimaxi.com/docs/coding-plan/faq) 用量的桌面小工具**
+**一个监控 [MiniMax Token Plan](https://platform.minimax.cn/docs/coding-plan/faq) 用量的桌面小工具**
 
 基于 **Electron + Vue 3 + TypeScript**，每 5 分钟自动刷新。
 
@@ -57,7 +57,7 @@
 | **API Key**（Bearer） | 5h 窗口 / 周窗口 / 各模型用量 / 套餐等级 | 必填，否则主卡都看不到 |
 | **Dashboard 登录**（内嵌浏览器 + cookie） | 累计 / 近 7 天 / 近 30 天 / 折线 / 热力图 / 积分 / 套餐标题 | 想看更多数据时点"在应用内登录 MiniMax" |
 
-> **Dashboard 数据是从 `platform.minimaxi.com/console/usage` 后端抓的**，
+> **Dashboard 数据是从 `platform.minimax.cn/console/usage` 后端抓的**，
 > 不是 OpenAPI。需要在工具里点登录按钮，cookie 存在独立的
 > `persist:minimax-auth` session 里，跨重启有效。
 
@@ -159,7 +159,7 @@ npm test
 
 ### 端点
 
-- **URL**：`https://www.minimaxi.com/v1/api/openplatform/coding_plan/remains`
+- **URL**：`https://www.minimax.cn/v1/api/openplatform/coding_plan/remains`
 - **方法**：`GET`
 - **请求头**：`Authorization: Bearer <API Key>`
 - **超时**：15 秒
@@ -232,28 +232,39 @@ absolute count 是 0/0，但 percent 字段才是真正的用量。如果直接�
 
 ### 抓取的端点（用 Chrome DevTools MCP 验证过）
 
-数据源是 `https://platform.minimaxi.com/console/usage` 页面后端，鉴权是
-**cookie + x-group-id header**。共 4 个端点：
+数据源是 `https://platform.minimax.cn/console/usage` 页面后端，鉴权是
+**cookie + x-group-id header**。共 6 个端点：
 
 | 端点 | 用途 |
 |---|---|
 | `/backend/account/token_plan/usage_summary` | 累计 / 近 7 天 / 近 30 天 / 活跃天数 / 每日明细 |
 | `/backend/account/token_plan/remains_percent` | 5h / 周窗口（字段命名比 OpenAPI 干净） |
 | `/backend/account/token_plan_credit` | 积分余额 + 套餐标题 + subscription key |
+| `/backend/account/token_plan/usage_overview?period=day\|week\|month` | 用量总览 + 每日趋势（按模型堆叠） |
+| `/backend/account/token_plan/usage_hourly_detail?start_time=&end_time=` | 用量明细表（小时级，UTC+8） |
 | `/v1/api/openplatform/charge/token_plan/usage` | 调用量明细（备选源） |
 
 ### 登录流程
 
 1. 在「**Dashboard 登录态**」面板点 **「在应用内登录 MiniMax」**
-2. 弹窗打开 `https://platform.minimaxi.com/console/usage`（微信扫码 / 手机号都行）
+2. 弹窗打开 `https://platform.minimax.cn/console/usage`（微信扫码 / 手机号都行）
 3. 登录成功**窗口自动关**，主窗口立刻多出 4 大数字 + 折线 + 热力图
 4. **下次启动免登录**：cookie 存在独立的 `persist:minimax-auth` session
 
 主进程的实现：
 - 独立 partition `persist:minimax-auth` 持久化 cookie
-- 加载 dashboard URL 后，**轮询 `webContents.session.cookies.get({})`**（不带 domain 过滤，兼容 `platform.minimaxi.com` 和 `www.minimaxi.com` 两套域）
+- 加载 dashboard URL 后，**轮询 `webContents.session.cookies.get({})`**（不带 domain 过滤，兼容 `platform.minimax.cn` 和 `www.minimax.cn` 两套域）
 - 检测到 `_token` + `minimax_group_id_v2` 同时存在 → 通知主窗口 + 关闭窗口
 - 主进程用 `session.fromPartition('persist:minimax-auth').fetch()` 调 dashboard API，**自动带 cookie、绕 CORS**
+
+### usage_overview 关键字段（用量总览 + 每日趋势）
+
+`period` 决定 `trend[].time_label` 的语义：
+
+| period | time_label | 场景 |
+|---|---|---|
+| `day` | `"00:00"` ~ `"23:00"` | 当日（按小时，24 个桶） |
+| `week`
 
 ### usage_summary 关键字段
 
@@ -310,7 +321,7 @@ absolute count 是 0/0，但 percent 字段才是真正的用量。如果直接�
 
 ## 获取 API Key
 
-1. 登录 [MiniMax 开放平台](https://platform.minimaxi.com/)
+1. 登录 [MiniMax 开放平台](https://platform.minimax.cn/)
 2. 进入「接口密钥」→ 创建一个 **订阅 Key**（Token Plan 专用，与按量计费 Key 相互独立）
 3. 把这串 Key 粘贴进本工具的 API Key 输入框，点保存
 
